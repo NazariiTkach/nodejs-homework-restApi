@@ -6,33 +6,23 @@ const { RequestError } = require("../helpers");
 const { JWT_SECRET } = process.env;
 
 const auth = async (req, res, next) => {
-  const authHeader = req.headers.authorization || "";
-  const [type, token] = authHeader.split(" ");
-
-  if (type !== "Bearer") {
-    throw RequestError(401, "Token type is not valid!");
+  const { authorization = "" } = req.headers;
+  console.log(req.headers.authorization);
+  const [bearer, token] = authorization.split(" ");
+  if (bearer !== "Bearer") {
+    next(RequestError(401));
   }
-
-  if (!token) {
-    throw RequestError(401, "No token provided");
-  }
-
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    if (payload.type !== "access") {
-      return res.status(401).json({ message: "Invalid token" });
+    const { id } = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(id);
+    if (!user || !user.token || user.token !== token) {
+      next(RequestError(401));
     }
-    const user = await User.findById(payload.userId);
     req.user = user;
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      throw RequestError(401, "Token expired");
-    }
-    if (error instanceof jwt.JsonWebTokenError) {
-      throw RequestError(401, "Invalid token");
-    }
+    next();
+  } catch {
+    next(RequestError(401));
   }
-  next();
 };
 
 module.exports = auth;
