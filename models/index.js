@@ -1,5 +1,5 @@
-const Contact = require("./contacts.js");
-const User = require("./users.js");
+const Contact = require("./contacts");
+const User = require("./users");
 
 
 module.exports = { Contact, User };
